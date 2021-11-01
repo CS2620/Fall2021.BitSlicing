@@ -8,6 +8,9 @@ import java.util.List;
 import java.awt.Color;
 
 import javax.imageio.ImageIO;
+
+import org.w3c.dom.html.HTMLAnchorElement;
+
 import java.awt.Graphics2D;
 
 public class Processor {
@@ -21,7 +24,88 @@ public class Processor {
     if (filename.toLowerCase().endsWith(".ppm")) {
       try {
         List<String> lines = Files.readAllLines(Paths.get(filename));
-        
+        int EXPECTING_MAGIC_NUMBER = 0;
+        int EXPECTING_DIMENSIONS = 1;
+        int EXPECTING_BIT_DEPTH = 2;
+        int EXPECTING_CONTENT = 3;
+        int state = EXPECTING_MAGIC_NUMBER;
+
+        int width = 0;
+        int height = 0;
+        int next = 0;
+        BufferedImage bi = null;
+
+        for (int i = 0; i < lines.size(); i++) {
+          String line = lines.get(i);
+          if (line.startsWith("#") || line.trim().length() == 0)
+            continue; // Ignore comments and blank lines
+          if (state == EXPECTING_MAGIC_NUMBER) {
+            if (line.startsWith("P3")) {
+              state = EXPECTING_DIMENSIONS;
+            } else {
+              throw new RuntimeException(
+                  "Expected the magic number P3 on line " + i + " but I got: " + line.substring(0, 1000));
+            }
+          } else if (state == EXPECTING_DIMENSIONS) {
+            String[] splits = line.trim().split(" ");
+            if (splits.length != 2)
+              throw new RuntimeException(
+                  "Expected two strings for dimensions on line " + i + " but I got: " + line.substring(0, 1000));
+            try {
+              int w = Integer.parseInt(splits[0]);
+              int h = Integer.parseInt(splits[1]);
+              width = w;
+              height = h;
+              System.out.println("Found the dimensions of " + w + ", " + h);
+              state = EXPECTING_BIT_DEPTH;
+              bi = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+
+            } catch (RuntimeException e) {
+              throw new RuntimeException(
+                  "Expected two ints for dimensions on line " + i + " but I got: " + line.substring(0, 1000));
+
+            }
+          } else if (state == EXPECTING_BIT_DEPTH) {
+            if (!line.trim().equals("255")) {
+              throw new RuntimeException(
+                  "Expecting a bit depth of 255 on line " + i + " but I got: " + line.substring(0, 1000));
+            } else {
+              state = EXPECTING_CONTENT;
+            }
+          } else if (state == EXPECTING_CONTENT) {
+            String[] splits = line.split(" ");
+            if (splits.length % 3 != 0)
+              throw new RuntimeException(
+                  "Expecting content to be a power of 3 on line " + i + " but I got: " + line.substring(0, 1000));
+            for (int j = 0; j < splits.length; j += 3) {
+              String redString = splits[j];
+              String greenString = splits[j + 1];
+              String blueString = splits[j + 2];
+
+              try {
+                int red = Integer.parseInt(redString);
+                int green = Integer.parseInt(greenString);
+                int blue = Integer.parseInt(blueString);
+                int currentX = next % width;
+                int currentY = (int) (next / width);
+
+                bi.setRGB(currentX, currentY, new Color(red, green, blue).getRGB());
+                next++;
+              } catch (RuntimeException e) {
+                throw new RuntimeException("Expecting integer numbers on line " + i + " number " + j + " but I got: "
+                    + line.substring(0, 1000));
+              }
+
+            }
+
+          } else {
+            throw new RuntimeException(
+                "You arrived at an unknown parsing state on line " + i + " with the parsing state of " + state);
+          }
+        }
+        // Now add the layer
+        addLayer(new ImageLayer(new IPImage(bi)));
+
       } catch (IOException e) {
         // TODO Auto-generated catch block
         e.printStackTrace();
@@ -235,7 +319,7 @@ public class Processor {
     Graphics2D g = (Graphics2D) toReturn.getGraphics();
     g.setColor(Color.GRAY);
     g.fillRect(0, 0, width, height);
-    for(int i = 0; i < 256; i++){
+    for (int i = 0; i < 256; i++) {
       g.setColor(new Color(i, i, i));
       g.fillRect(i, 0, 1, height);
     }
@@ -247,35 +331,33 @@ public class Processor {
       float x = i / 255f;
       float output = fun.run(x);
       output = Math.min(1, Math.max(0, output));
-      float y = 1-output;
-      int j = (int)(y*255);
-      if(i!=0){
+      float y = 1 - output;
+      int j = (int) (y * 255);
+      if (i != 0) {
         g.setColor(Color.BLACK);
-        g.drawLine(lastX, lastY, i,j);
+        g.drawLine(lastX, lastY, i, j);
         g.setColor(Color.WHITE);
-        g.drawLine(lastX-1, lastY-1, i-1,j-1);
+        g.drawLine(lastX - 1, lastY - 1, i - 1, j - 1);
       }
-      //g.fillRect(i,j,1,1);
+      // g.fillRect(i,j,1,1);
       lastX = i;
       lastY = j;
 
-
-
     }
     // for (var h = 0; h < height; h++) {
-    //   float y = 1 - h / (float) height;
-    //   if (y == .1)
-    //     System.out.println("here");
-    //   for (var w = 0; w < width; w++) {
-    //     float x = w / (float) width;
-    //     float output = fun.run(x);
-    //     output = Math.min(1, Math.max(0, output));
-    //     if (Math.abs(y - output) < 2 / (float) height) {
-    //       g.setColor(Color.WHITE);
-    //       g.fillRect(w, h, 1, 1);
-    //     }
+    // float y = 1 - h / (float) height;
+    // if (y == .1)
+    // System.out.println("here");
+    // for (var w = 0; w < width; w++) {
+    // float x = w / (float) width;
+    // float output = fun.run(x);
+    // output = Math.min(1, Math.max(0, output));
+    // if (Math.abs(y - output) < 2 / (float) height) {
+    // g.setColor(Color.WHITE);
+    // g.fillRect(w, h, 1, 1);
+    // }
 
-    //   }
+    // }
     // }
 
     g.dispose();
@@ -289,7 +371,7 @@ public class Processor {
     return this;
   }
 
-  public Processor setCurrentLayer(int l){
+  public Processor setCurrentLayer(int l) {
     this.currentLayer = l;
     return this;
   }

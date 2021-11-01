@@ -2,7 +2,7 @@
 public class Main {
 
     public static void main(String[] args) {
-        var start = new Processor("./in/horse.jpg").grayscale();
+        var start = new Processor("./in/horse.ppm");
 
         // for (int i = 0; i < 8; i++) {
         //     final int j = i;
