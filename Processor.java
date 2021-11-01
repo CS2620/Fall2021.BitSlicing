@@ -1,6 +1,8 @@
 import java.awt.image.BufferedImage;
+import java.awt.image.ImageObserver;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.awt.Color;
@@ -16,6 +18,21 @@ public class Processor {
   int canvasHeight;
 
   public Processor(String filename) {
+    if (filename.toLowerCase().endsWith(".ppm")) {
+      try {
+        List<String> lines = Files.readAllLines(Paths.get(filename));
+        
+      } catch (IOException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      }
+
+    } else {
+      readStandardFormat(filename);
+    }
+  }
+
+  private void readStandardFormat(String filename) {
     try {
       BufferedImage bufferedImage = ImageIO.read(new File(filename));
       // layers.add(new ImageLayer(new Image(bufferedImage)));
@@ -119,6 +136,34 @@ public class Processor {
   }
 
   public Processor saveLayer(String string) {
+    if (string.toLowerCase().endsWith(".ppm")) {
+      try {
+        StringBuilder ppm = new StringBuilder();
+        var image = currentLayer().image().image;
+
+        // Magic Number
+        ppm.append("P3\n");
+
+        // Dimensions
+        ppm.append(image.getWidth() + " " + image.getHeight() + "\n");
+
+        // Max byte size
+        ppm.append("255\n");
+
+        // Loop over the pixels and add them to the file
+        for (var h = 0; h < image.getHeight(); h++) {
+          for (var w = 0; w < image.getWidth(); w++) {
+            var pixelInt = image.getRGB(w, h);
+            var color = new Color(pixelInt);
+            ppm.append(color.getRed() + " " + color.getGreen() + " " + color.getBlue() + " ");
+          }
+        }
+        Files.write(Paths.get(string), ppm.toString().getBytes());
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+      return this;
+    }
     currentLayer().image().save(string);
     return this;
   }

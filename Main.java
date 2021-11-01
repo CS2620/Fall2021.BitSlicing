@@ -4,30 +4,32 @@ public class Main {
     public static void main(String[] args) {
         var start = new Processor("./in/horse.jpg").grayscale();
 
-        for (int i = 0; i < 8; i++) {
-            final int j = i;
-            start.addLayer(image -> image.bitSlice(j));
-            start.saveLayers(new int[] { 1 }, "./out/sliced-" + i + ".png");
-            start.popLayer();
-        }
+        // for (int i = 0; i < 8; i++) {
+        //     final int j = i;
+        //     start.addLayer(image -> image.bitSlice(j));
+        //     start.saveLayers(new int[] { 1 }, "./out/sliced-" + i + ".png");
+        //     start.popLayer();
+        // }
 
-        for (int i = 0; i < 8; i++) {
-            start = new Processor("./in/horse.jpg").grayscale();
-            final int j = i;
-            start.addLayer(image -> image.bitSlice(0, j));
+        // for (int i = 0; i < 8; i++) {
+        //     start = new Processor("./in/horse.jpg").grayscale();
+        //     final int j = i;
+        //     start.addLayer(image -> image.bitSlice(0, j));
 
-            start.saveCurrentLayer("./out/sliced-combined-" + 0 + "-" + i + ".png");
+        //     start.saveCurrentLayer("./out/sliced-combined-" + 0 + "-" + i + ".png");
 
-        }
+        // }
 
-        for (int i = 0; i < 8; i++) {
-            start = new Processor("./in/horse.jpg").grayscale();
-            final int j = i;
-            start.addLayer(image -> image.bitSlice(j, 7));
+        // for (int i = 0; i < 8; i++) {
+        //     start = new Processor("./in/horse.jpg").grayscale();
+        //     final int j = i;
+        //     start.addLayer(image -> image.bitSlice(j, 7));
 
-            start.saveCurrentLayer("./out/sliced-combined2-" + i + "-" + 7 + ".png");
+        //     start.saveCurrentLayer("./out/sliced-combined2-" + i + "-" + 7 + ".png");
 
-        }
+        // }
+
+        start.saveCurrentLayer("./out/horse.ppm");
 
         // for(var i = 1; i < 10; i++){
         // start.push()
