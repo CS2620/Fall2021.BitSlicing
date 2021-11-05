@@ -22,97 +22,194 @@ public class Processor {
 
   public Processor(String filename) {
     if (filename.toLowerCase().endsWith(".ppm")) {
-      try {
-        List<String> lines = Files.readAllLines(Paths.get(filename));
-        int EXPECTING_MAGIC_NUMBER = 0;
-        int EXPECTING_DIMENSIONS = 1;
-        int EXPECTING_BIT_DEPTH = 2;
-        int EXPECTING_CONTENT = 3;
-        int state = EXPECTING_MAGIC_NUMBER;
+      loadPPM(filename);
+    } 
+    else if(filename.toLowerCase().endsWith(".custom")){
+      loadCustom(filename);
+    }else {
+      readStandardFormat(filename);
+    }
+  }
 
-        int width = 0;
-        int height = 0;
-        int next = 0;
-        BufferedImage bi = null;
+  private void loadCustom(String filename) {
+    try {
+      List<String> lines = Files.readAllLines(Paths.get(filename));
+      int EXPECTING_MAGIC_NUMBER = 0;
+      int EXPECTING_DIMENSIONS = 1;
+      int EXPECTING_BIT_DEPTH = 2;
+      int EXPECTING_CONTENT = 3;
+      int state = EXPECTING_MAGIC_NUMBER;
 
-        for (int i = 0; i < lines.size(); i++) {
-          String line = lines.get(i);
-          if (line.startsWith("#") || line.trim().length() == 0)
-            continue; // Ignore comments and blank lines
-          if (state == EXPECTING_MAGIC_NUMBER) {
-            if (line.startsWith("P3")) {
-              state = EXPECTING_DIMENSIONS;
-            } else {
-              throw new RuntimeException(
-                  "Expected the magic number P3 on line " + i + " but I got: " + line.substring(0, 1000));
-            }
-          } else if (state == EXPECTING_DIMENSIONS) {
-            String[] splits = line.trim().split(" ");
-            if (splits.length != 2)
-              throw new RuntimeException(
-                  "Expected two strings for dimensions on line " + i + " but I got: " + line.substring(0, 1000));
-            try {
-              int w = Integer.parseInt(splits[0]);
-              int h = Integer.parseInt(splits[1]);
-              width = w;
-              height = h;
-              System.out.println("Found the dimensions of " + w + ", " + h);
-              state = EXPECTING_BIT_DEPTH;
-              bi = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+      int width = 0;
+      int height = 0;
+      int next = 0;
+      BufferedImage bi = null;
 
-            } catch (RuntimeException e) {
-              throw new RuntimeException(
-                  "Expected two ints for dimensions on line " + i + " but I got: " + line.substring(0, 1000));
-
-            }
-          } else if (state == EXPECTING_BIT_DEPTH) {
-            if (!line.trim().equals("255")) {
-              throw new RuntimeException(
-                  "Expecting a bit depth of 255 on line " + i + " but I got: " + line.substring(0, 1000));
-            } else {
-              state = EXPECTING_CONTENT;
-            }
-          } else if (state == EXPECTING_CONTENT) {
-            String[] splits = line.split(" ");
-            if (splits.length % 3 != 0)
-              throw new RuntimeException(
-                  "Expecting content to be a power of 3 on line " + i + " but I got: " + line.substring(0, 1000));
-            for (int j = 0; j < splits.length; j += 3) {
-              String redString = splits[j];
-              String greenString = splits[j + 1];
-              String blueString = splits[j + 2];
-
-              try {
-                int red = Integer.parseInt(redString);
-                int green = Integer.parseInt(greenString);
-                int blue = Integer.parseInt(blueString);
-                int currentX = next % width;
-                int currentY = (int) (next / width);
-
-                bi.setRGB(currentX, currentY, new Color(red, green, blue).getRGB());
-                next++;
-              } catch (RuntimeException e) {
-                throw new RuntimeException("Expecting integer numbers on line " + i + " number " + j + " but I got: "
-                    + line.substring(0, 1000));
-              }
-
-            }
-
+      for (int i = 0; i < lines.size(); i++) {
+        String line = lines.get(i);
+        if (line.startsWith("#") || line.trim().length() == 0)
+          continue; // Ignore comments and blank lines
+        if (state == EXPECTING_MAGIC_NUMBER) {
+          if (line.startsWith("P3")) {
+            state = EXPECTING_DIMENSIONS;
           } else {
             throw new RuntimeException(
-                "You arrived at an unknown parsing state on line " + i + " with the parsing state of " + state);
+                "Expected the magic number P3 on line " + i + " but I got: " + line.substring(0, 1000));
           }
+        } else if (state == EXPECTING_DIMENSIONS) {
+          String[] splits = line.trim().split(" ");
+          if (splits.length != 2)
+            throw new RuntimeException(
+                "Expected two strings for dimensions on line " + i + " but I got: " + line.substring(0, 1000));
+          try {
+            int w = Integer.parseInt(splits[0]);
+            int h = Integer.parseInt(splits[1]);
+            width = w;
+            height = h;
+            
+            state = EXPECTING_BIT_DEPTH;
+            bi = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+
+          } catch (RuntimeException e) {
+            throw new RuntimeException(
+                "Expected two ints for dimensions on line " + i + " but I got: " + line.substring(0, 1000));
+
+          }
+        } else if (state == EXPECTING_BIT_DEPTH) {
+          if (!line.trim().equals("255")) {
+            throw new RuntimeException(
+                "Expecting a bit depth of 255 on line " + i + " but I got: " + line.substring(0, 1000));
+          } else {
+            state = EXPECTING_CONTENT;
+          }
+        } else if (state == EXPECTING_CONTENT) {
+          String[] splits = line.split(" ");
+          if (splits.length % 3 != 0)
+            throw new RuntimeException(
+                "Expecting content to be a power of 3 on line " + i + " but I got: " + line.substring(0, 1000));
+          for (int j = 0; j < splits.length; j += 3) {
+            String redString = splits[j];
+            String greenString = splits[j + 1];
+            String blueString = splits[j + 2];
+
+            try {
+              int red = Integer.parseInt(redString);
+              int green = Integer.parseInt(greenString);
+              int blue = Integer.parseInt(blueString);
+              int currentX = next % width;
+              int currentY = (int) (next / width);
+
+              bi.setRGB(currentX, currentY, new Color(red, green, blue).getRGB());
+              next++;
+            } catch (RuntimeException e) {
+              throw new RuntimeException(
+                  "Expecting integer numbers on line " + i + " number " + j + " but I got: " + line.substring(0, 1000));
+            }
+
+          }
+
+        } else {
+          throw new RuntimeException(
+              "You arrived at an unknown parsing state on line " + i + " with the parsing state of " + state);
         }
-        // Now add the layer
-        addLayer(new ImageLayer(new Layer(bi)));
-
-      } catch (IOException e) {
-        // TODO Auto-generated catch block
-        e.printStackTrace();
       }
+      // Now add the layer
+      addLayer(new ImageLayer(new Layer(bi)));
 
-    } else {
-      readStandardFormat(filename);
+    } catch (IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+  }
+
+  private void loadPPM(String filename) {
+    try {
+      List<String> lines = Files.readAllLines(Paths.get(filename));
+      int EXPECTING_MAGIC_NUMBER = 0;
+      int EXPECTING_DIMENSIONS = 1;
+      int EXPECTING_BIT_DEPTH = 2;
+      int EXPECTING_CONTENT = 3;
+      int state = EXPECTING_MAGIC_NUMBER;
+
+      int width = 0;
+      int height = 0;
+      int next = 0;
+      BufferedImage bi = null;
+
+      for (int i = 0; i < lines.size(); i++) {
+        String line = lines.get(i);
+        if (line.startsWith("#") || line.trim().length() == 0)
+          continue; // Ignore comments and blank lines
+        if (state == EXPECTING_MAGIC_NUMBER) {
+          if (line.startsWith("P3")) {
+            state = EXPECTING_DIMENSIONS;
+          } else {
+            throw new RuntimeException(
+                "Expected the magic number P3 on line " + i + " but I got: " + line.substring(0, 1000));
+          }
+        } else if (state == EXPECTING_DIMENSIONS) {
+          String[] splits = line.trim().split(" ");
+          if (splits.length != 2)
+            throw new RuntimeException(
+                "Expected two strings for dimensions on line " + i + " but I got: " + line.substring(0, 1000));
+          try {
+            int w = Integer.parseInt(splits[0]);
+            int h = Integer.parseInt(splits[1]);
+            width = w;
+            height = h;
+            
+            state = EXPECTING_BIT_DEPTH;
+            bi = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+
+          } catch (RuntimeException e) {
+            throw new RuntimeException(
+                "Expected two ints for dimensions on line " + i + " but I got: " + line.substring(0, 1000));
+
+          }
+        } else if (state == EXPECTING_BIT_DEPTH) {
+          if (!line.trim().equals("255")) {
+            throw new RuntimeException(
+                "Expecting a bit depth of 255 on line " + i + " but I got: " + line.substring(0, 1000));
+          } else {
+            state = EXPECTING_CONTENT;
+          }
+        } else if (state == EXPECTING_CONTENT) {
+          String[] splits = line.split(" ");
+          if (splits.length % 3 != 0)
+            throw new RuntimeException(
+                "Expecting content to be a power of 3 on line " + i + " but I got: " + line.substring(0, 1000));
+          for (int j = 0; j < splits.length; j += 3) {
+            String redString = splits[j];
+            String greenString = splits[j + 1];
+            String blueString = splits[j + 2];
+
+            try {
+              int red = Integer.parseInt(redString);
+              int green = Integer.parseInt(greenString);
+              int blue = Integer.parseInt(blueString);
+              int currentX = next % width;
+              int currentY = (int) (next / width);
+
+              bi.setRGB(currentX, currentY, new Color(red, green, blue).getRGB());
+              next++;
+            } catch (RuntimeException e) {
+              throw new RuntimeException(
+                  "Expecting integer numbers on line " + i + " number " + j + " but I got: " + line.substring(0, 1000));
+            }
+
+          }
+
+        } else {
+          throw new RuntimeException(
+              "You arrived at an unknown parsing state on line " + i + " with the parsing state of " + state);
+        }
+      }
+      // Now add the layer
+      addLayer(new ImageLayer(new Layer(bi)));
+
+    } catch (IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
     }
   }
 
@@ -221,34 +318,70 @@ public class Processor {
 
   public Processor saveLayer(String string) {
     if (string.toLowerCase().endsWith(".ppm")) {
-      try {
-        StringBuilder ppm = new StringBuilder();
-        var image = currentLayer().image().image;
-
-        // Magic Number
-        ppm.append("P3\n");
-
-        // Dimensions
-        ppm.append(image.getWidth() + " " + image.getHeight() + "\n");
-
-        // Max byte size
-        ppm.append("255\n");
-
-        // Loop over the pixels and add them to the file
-        for (var h = 0; h < image.getHeight(); h++) {
-          for (var w = 0; w < image.getWidth(); w++) {
-            var pixelInt = image.getRGB(w, h);
-            var color = new Color(pixelInt);
-            ppm.append(color.getRed() + " " + color.getGreen() + " " + color.getBlue() + " ");
-          }
-        }
-        Files.write(Paths.get(string), ppm.toString().getBytes());
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-      return this;
+      return savePPM(string);
+    }
+    else if(string.toLowerCase().endsWith(".custom")){
+      return saveCustom(string);
     }
     currentLayer().image().save(string);
+    return this;
+  }
+
+  private Processor saveCustom(String string) {
+    try {
+      StringBuilder ppm = new StringBuilder();
+      var image = currentLayer().image().image;
+
+      // Magic Number
+      ppm.append("P3\n");
+
+      // Dimensions
+      ppm.append(image.getWidth() + " " + image.getHeight() + "\n");
+
+      // Max byte size
+      ppm.append("255\n");
+
+      // Loop over the pixels and add them to the file
+      for (var h = 0; h < image.getHeight(); h++) {
+        for (var w = 0; w < image.getWidth(); w++) {
+          var pixelInt = image.getRGB(w, h);
+          var color = new Color(pixelInt);
+          ppm.append(color.getRed() + " " + color.getGreen() + " " + color.getBlue() + " ");
+        }
+      }
+      Files.write(Paths.get(string), ppm.toString().getBytes());
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    return this;
+  }
+
+  private Processor savePPM(String string) {
+    try {
+      StringBuilder ppm = new StringBuilder();
+      var image = currentLayer().image().image;
+
+      // Magic Number
+      ppm.append("P3\n");
+
+      // Dimensions
+      ppm.append(image.getWidth() + " " + image.getHeight() + "\n");
+
+      // Max byte size
+      ppm.append("255\n");
+
+      // Loop over the pixels and add them to the file
+      for (var h = 0; h < image.getHeight(); h++) {
+        for (var w = 0; w < image.getWidth(); w++) {
+          var pixelInt = image.getRGB(w, h);
+          var color = new Color(pixelInt);
+          ppm.append(color.getRed() + " " + color.getGreen() + " " + color.getBlue() + " ");
+        }
+      }
+      Files.write(Paths.get(string), ppm.toString().getBytes());
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
     return this;
   }
 
@@ -377,7 +510,7 @@ public class Processor {
   }
 
   public boolean compareTo(Processor other) {
-    //Are the images the same
+    // Are the images the same
     var thisImage = this.currentLayer().image();
     var otherImage = other.currentLayer().image();
     var toReturn = thisImage.compareTo(otherImage);

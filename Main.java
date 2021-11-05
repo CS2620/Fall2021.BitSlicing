@@ -10,12 +10,14 @@ public class Main {
     }
 
     public Main(){
-        doListFormats();
+        //doListFormats();
         // doTestFileFormats();
         // doBitSlicing();
         // doBrightening();
         // doApplyCurve();
-        doCalculateCompressionRatio();
+        doCustomFormat("horse", "png");
+        doCalculateCompressionRatio("horse", "custom");
+        
     }
 
     private static String[] fileFormats = null;
@@ -46,6 +48,17 @@ public class Main {
         return fileFormats;
     }
 
+
+    public void doCustomFormat(String filename, String ending){
+        var start = new Processor("./in/" + filename + "." + ending);
+        start.saveCurrentLayer("./out/" + filename + ".custom");
+        var end = new Processor("./out/" + filename + ".custom");
+        
+        System.out.println("Are the images the same? " + end.compareTo(start));
+
+    }
+
+
     public void doListFormats() {
         System.out.println("The following are the file formats supported by your version of Java:");
         String[] endings = getFileFormats();
@@ -55,15 +68,15 @@ public class Main {
         System.out.println();
     }
 
-    public void doCalculateCompressionRatio() {
+    public void doCalculateCompressionRatio(String filename, String extension) {
 
         var standardFileFormats = getFileFormats();
-        var start = new Processor("./in/horse.png");
+        var start = new Processor("./in/" + filename + "." + extension);
         for (var ending : standardFileFormats) {
             start.saveCurrentLayer("./out/horse." + ending);
         }
 
-        var compareSize = new File("./out/horse.ppm").length();
+        var compareSize = new File("./out/" + filename + "." + extension).length();
 
         // Get the sizes of the files
         for (var ending : standardFileFormats) {
