@@ -104,7 +104,7 @@ public class Processor {
           }
         }
         // Now add the layer
-        addLayer(new ImageLayer(new IPImage(bi)));
+        addLayer(new ImageLayer(new Layer(bi)));
 
       } catch (IOException e) {
         // TODO Auto-generated catch block
@@ -120,7 +120,7 @@ public class Processor {
     try {
       BufferedImage bufferedImage = ImageIO.read(new File(filename));
       // layers.add(new ImageLayer(new Image(bufferedImage)));
-      addLayer(new ImageLayer(new IPImage(bufferedImage)));
+      addLayer(new ImageLayer(new Layer(bufferedImage)));
       inferCanvasSize(bufferedImage);
 
     } catch (IOException ex) {
@@ -129,7 +129,7 @@ public class Processor {
   }
 
   public Processor(BufferedImage bi) {
-    addLayer(new ImageLayer(new IPImage(bi)));
+    addLayer(new ImageLayer(new Layer(bi)));
     // layers.add(new ImageLayer(new Image(bi)));
     inferCanvasSize(bi);
   }
@@ -162,7 +162,7 @@ public class Processor {
     return this;
   }
 
-  public IPImage image() {
+  public Layer image() {
     return this.currentLayer().image();
   }
 
@@ -199,7 +199,7 @@ public class Processor {
 
   }
 
-  public Processor addLayer(IPImage i) {
+  public Processor addLayer(Layer i) {
     this.layers.add(new ImageLayer(i));
     resetCurrentLayer();
 
@@ -214,7 +214,7 @@ public class Processor {
   }
 
   public Processor addLayer(BufferedImage bufferedImage) {
-    layers.add(new ImageLayer(new IPImage(bufferedImage)));
+    layers.add(new ImageLayer(new Layer(bufferedImage)));
     resetCurrentLayer();
     return this;
   }
@@ -296,7 +296,7 @@ public class Processor {
 
     g.dispose();
 
-    new IPImage(merged).save(string);
+    new Layer(merged).save(string);
 
     return this;
   }
@@ -310,7 +310,7 @@ public class Processor {
     return this;
   }
 
-  public static IPImage ImageFromFunction(IPixelFunction fun) {
+  public static Layer ImageFromFunction(IPixelFunction fun) {
 
     int width = 256;
     int height = 256;
@@ -362,7 +362,7 @@ public class Processor {
 
     g.dispose();
 
-    return new IPImage(toReturn);
+    return new Layer(toReturn);
 
   }
 
@@ -374,6 +374,14 @@ public class Processor {
   public Processor setCurrentLayer(int l) {
     this.currentLayer = l;
     return this;
+  }
+
+  public boolean compareTo(Processor other) {
+    //Are the images the same
+    var thisImage = this.currentLayer().image();
+    var otherImage = other.currentLayer().image();
+    var toReturn = thisImage.compareTo(otherImage);
+    return toReturn;
   }
 
 }

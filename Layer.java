@@ -6,11 +6,11 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.awt.Color;
 
-public class IPImage {
+public class Layer {
 
   BufferedImage image;
 
-  public IPImage(String filename) {
+  public Layer(String filename) {
     try {
       BufferedImage bufferedImage = ImageIO.read(new File(filename));
       this.image = bufferedImage;
@@ -20,20 +20,22 @@ public class IPImage {
     }
   }
 
-  public IPImage(BufferedImage bi) {
+  public Layer(BufferedImage bi) {
     this.image = bi;
   }
 
-  public IPImage save(String filename) {
+  public Layer save(String filename) {
+    //Get the file type
+    var ending = filename.substring(filename.length() - 3);
     try {
-      ImageIO.write(this.image, "PNG", new File(filename));
+      ImageIO.write(this.image, ending, new File(filename));
     } catch (IOException ex) {
       ex.printStackTrace();
     }
     return this;
   }
 
-  public IPImage rotatedNearestNeighbor(double angle) {
+  public Layer rotatedNearestNeighbor(double angle) {
     BufferedImage toReturn = new BufferedImage(this.image.getWidth(), this.image.getHeight(),
         BufferedImage.TYPE_INT_ARGB);
 
@@ -65,7 +67,7 @@ public class IPImage {
     return this;
   }
 
-  public IPImage scaleNearestNeighbor(double scaleX, double scaleY) {
+  public Layer scaleNearestNeighbor(double scaleX, double scaleY) {
     int newWidth = (int) (this.image.getWidth() * scaleX);
     int newHeight = (int) (this.image.getHeight() * scaleY);
     BufferedImage toReturn = new BufferedImage(this.image.getWidth(), this.image.getHeight(),
@@ -87,7 +89,7 @@ public class IPImage {
     return this;
   }
 
-  public IPImage translateNearestNeighbor(double i, double j) {
+  public Layer translateNearestNeighbor(double i, double j) {
     BufferedImage toReturn = new BufferedImage(this.image.getWidth(), this.image.getHeight(),
         BufferedImage.TYPE_INT_ARGB);
     for (var y = 0; y < toReturn.getHeight(); y++) {
@@ -107,7 +109,7 @@ public class IPImage {
     return this;
   }
 
-  public IPImage translateLinear(double i, double j, boolean b) {
+  public Layer translateLinear(double i, double j, boolean b) {
     BufferedImage toReturn = new BufferedImage(this.image.getWidth(), this.image.getHeight(),
         BufferedImage.TYPE_INT_ARGB);
     for (var y = 0; y < toReturn.getHeight(); y++) {
@@ -143,7 +145,7 @@ public class IPImage {
     return this;
   }
 
-  public IPImage crop(int ulx, int uly, int lrx, int lry) {
+  public Layer crop(int ulx, int uly, int lrx, int lry) {
     var width = lrx - ulx;
     var height = lry - uly;
     var toReturn = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
@@ -161,11 +163,11 @@ public class IPImage {
 
   }
 
-  public IPImage histogram() {
+  public Layer histogram() {
     return histogram(-1);
   }
 
-  public IPImage histogram(int cap) {
+  public Layer histogram(int cap) {
 
     if (cap < 1)
       cap = 256;
@@ -255,7 +257,7 @@ public class IPImage {
 
   }
 
-  public IPImage brighten(int i) {
+  public Layer brighten(int i) {
 
     for (var h = 0; h < this.image.getHeight(); h++) {
       for (var w = 0; w < this.image.getWidth(); w++) {
@@ -281,7 +283,7 @@ public class IPImage {
     return this;
   }
 
-  public IPImage addContrast(float amount) {
+  public Layer addContrast(float amount) {
     for (var h = 0; h < this.image.getHeight(); h++) {
       for (var w = 0; w < this.image.getWidth(); w++) {
 
@@ -309,7 +311,7 @@ public class IPImage {
     return this;
   }
 
-  public IPImage grayscale() {
+  public Layer grayscale() {
     for (var h = 0; h < this.image.getHeight(); h++) {
       for (var w = 0; w < this.image.getWidth(); w++) {
 
@@ -328,7 +330,7 @@ public class IPImage {
 
   }
 
-  public IPImage clone() {
+  public Layer clone() {
 
     // See https://stackoverflow.com/a/19327237/10047920
     BufferedImage b = new BufferedImage(this.image.getWidth(), this.image.getHeight(), this.image.getType());
@@ -336,7 +338,7 @@ public class IPImage {
     g.drawImage(this.image, 0, 0, null);
     g.dispose();
 
-    IPImage toReturn = new IPImage(b);
+    Layer toReturn = new Layer(b);
     return toReturn;
   }
 
@@ -344,7 +346,7 @@ public class IPImage {
     return new Color(image.getRGB(i, j));
   }
 
-  public IPImage applyCurve(IPixelFunction fun) {
+  public Layer applyCurve(IPixelFunction fun) {
     for (var h = 0; h < this.image.getHeight(); h++) {
       for (var w = 0; w < this.image.getWidth(); w++) {
 
@@ -363,7 +365,7 @@ public class IPImage {
     return this;
   }
 
-  public IPImage bitSlice(int power){
+  public Layer bitSlice(int power){
 
     BufferedImage b = new BufferedImage(this.image.getWidth(), this.image.getHeight(), this.image.getType());
     for (var h = 0; h < b.getHeight(); h++) {
@@ -390,11 +392,11 @@ public class IPImage {
 
 
 
-    IPImage toReturn = new IPImage(b);
+    Layer toReturn = new Layer(b);
     return toReturn;
     
   }
-  public IPImage bitSlice(int powerLow, int powerHigh){
+  public Layer bitSlice(int powerLow, int powerHigh){
     if(powerLow == powerHigh) return this.bitSlice(powerLow);
 
 
@@ -423,9 +425,35 @@ public class IPImage {
 
 
 
-    IPImage toReturn = new IPImage(b);
+    Layer toReturn = new Layer(b);
     return toReturn;
     
+  }
+
+  public boolean compareTo(Layer otherImage) {
+    //return false;
+    if(this.getWidth() != otherImage.getWidth() || this.getHeight() != otherImage.getHeight()) return false;
+    for(int y  = 0; y < getHeight(); y++){
+      for(int x = 0; x < getWidth(); x++){
+        Color thisColor = this.getColorAt(x,y);
+        Color otherColor = otherImage.getColorAt(x,y);
+        if(Helper.sameColor(thisColor, otherColor)) continue;
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private Color getColorAt(int x, int y) {
+    return new Color(image.getRGB(x,y));
+  }
+
+  private int getHeight() {
+    return image.getHeight();
+  }
+
+  private int getWidth() {
+    return image.getWidth();
   }
 
 }

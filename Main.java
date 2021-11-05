@@ -1,19 +1,88 @@
+import java.io.*;
+import java.util.*;
+
+import javax.imageio.ImageIO;
 
 public class Main {
 
     public static void main(String[] args) {
-        var start = new Processor("./in/horse.ppm");
-        start.saveCurrentLayer("./out/horse.ppm");
+        new Main();
+    }
 
-        doBitSlicing();
-        doBrightening();
-        doApplyCurve();
+    public Main(){
+        doListFormats();
+        // doTestFileFormats();
+        // doBitSlicing();
+        // doBrightening();
+        // doApplyCurve();
+        doCalculateCompressionRatio();
+    }
 
+    private static String[] fileFormats = null;
+
+    public static String[] getFileFormats() {
+        if(fileFormats != null){
+            return fileFormats;
+        }
+
+        //Get the list of supported file formats
+        var names = ImageIO.getWriterFormatNames();
+
+        //Use a set to remove endings that differ only by case
+        Set<String> toKeep = new HashSet<>();
         
+        //Remove redundant file endings or ones we don't want
+        Collection<String> ignore = Arrays.asList(new String[] { "tiff", "jpeg", "wbmp" });
+        for (int i = 0; i < names.length; ++i) {
+            String name = names[i].toLowerCase();
+            if (ignore.contains(name))
+                continue;
+            toKeep.add(name);
+        }
+        toKeep.add("ppm");
+
+        fileFormats = toKeep.toArray(new String[0]);
+
+        return fileFormats;
+    }
+
+    public void doListFormats() {
+        System.out.println("The following are the file formats supported by your version of Java:");
+        String[] endings = getFileFormats();
+        for (var ending : endings) {
+            System.out.println(ending);
+        }
+        System.out.println();
+    }
+
+    public void doCalculateCompressionRatio() {
+
+        var standardFileFormats = getFileFormats();
+        var start = new Processor("./in/horse.png");
+        for (var ending : standardFileFormats) {
+            start.saveCurrentLayer("./out/horse." + ending);
+        }
+
+        var compareSize = new File("./out/horse.ppm").length();
+
+        // Get the sizes of the files
+        for (var ending : standardFileFormats) {
+            var size = new File("./out/horse." + ending).length();
+            var ratio = compareSize / (double) size;
+            System.out.println("Compression ratio compared to " + ending + ": " + ratio);
+        }
 
     }
 
-    public static void doBitSlicing() {
+    public void doTestFileFormats() {
+        var start = new Processor("./in/horse.png");
+        start.saveCurrentLayer("./out/horse.ppm");
+        var end = new Processor("./out/horse.ppm");
+        var equal = end.compareTo(start);
+        System.out.println(equal);
+    }
+
+    public void doBitSlicing() {
         var start = new Processor("./in/horse.png");
 
         for (int i = 0; i < 8; i++) {
@@ -42,7 +111,7 @@ public class Main {
         }
     }
 
-    public static void doBrightening() {
+    public void doBrightening() {
         var start = new Processor("./in/horse.png");
 
         for (var i = 1; i < 10; i++) {
@@ -51,24 +120,23 @@ public class Main {
         }
     }
 
-    public static void doApplyCurve(){
+    public void doApplyCurve() {
         var start = new Processor("./in/horse.png");
 
         IPixelFunction ipf = new IPixelFunction() {
 
-        @Override
-        public float run(float input) {
-        return input;
-        //return (float)Math.pow(input, .3);
-        //return 1-input;
-        //return input < .5 ? 0 : 1;
+            @Override
+            public float run(float input) {
+                return input;
+                // return (float)Math.pow(input, .3);
+                // return 1-input;
+                // return input < .5 ? 0 : 1;
 
-        }
+            }
 
         };
 
-        start.applyCurve(ipf)
-        .addLayer(Processor.ImageFromFunction(ipf))
-        .saveLayers(new int[]{0,1}, "./out/pixel-function.png");
+        start.applyCurve(ipf).addLayer(Processor.ImageFromFunction(ipf)).saveLayers(new int[] { 0, 1 },
+                "./out/pixel-function.png");
     }
 }
