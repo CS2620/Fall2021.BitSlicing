@@ -34,11 +34,11 @@ public class Processor {
   private void loadCustom(String filename) {
     try {
       List<String> lines = Files.readAllLines(Paths.get(filename));
-      int EXPECTING_MAGIC_NUMBER = 0;
+      //int EXPECTING_MAGIC_NUMBER = 0;
       int EXPECTING_DIMENSIONS = 1;
       int EXPECTING_BIT_DEPTH = 2;
       int EXPECTING_CONTENT = 3;
-      int state = EXPECTING_MAGIC_NUMBER;
+      int state = EXPECTING_DIMENSIONS;
 
       int width = 0;
       int height = 0;
@@ -49,14 +49,7 @@ public class Processor {
         String line = lines.get(i);
         if (line.startsWith("#") || line.trim().length() == 0)
           continue; // Ignore comments and blank lines
-        if (state == EXPECTING_MAGIC_NUMBER) {
-          if (line.startsWith("P3")) {
-            state = EXPECTING_DIMENSIONS;
-          } else {
-            throw new RuntimeException(
-                "Expected the magic number P3 on line " + i + " but I got: " + line.substring(0, 1000));
-          }
-        } else if (state == EXPECTING_DIMENSIONS) {
+        if (state == EXPECTING_DIMENSIONS) {
           String[] splits = line.trim().split(" ");
           if (splits.length != 2)
             throw new RuntimeException(
@@ -333,7 +326,7 @@ public class Processor {
       var image = currentLayer().image().image;
 
       // Magic Number
-      ppm.append("P3\n");
+      //ppm.append("P3\n");
 
       // Dimensions
       ppm.append(image.getWidth() + " " + image.getHeight() + "\n");
